@@ -21,37 +21,19 @@ def get_captcha_solution(captcha_image_url):
         response.raise_for_status()
         img = Image.open(BytesIO(response.content))
 
-        # Convert image to RGB
+        # Convert image to RGB if necessary
         if img.mode != 'RGB':
             img = img.convert('RGB')
 
         # Save image temporarily
-        img.save('captcha.jpg')
+        img.save('captcha.jpg', 'JPEG')
 
-        # Send CAPTCHA image to 2Captcha
-        with open('captcha.jpg', 'rb') as captcha_file:
-            files = {'file': captcha_file}
-            data = {'key': API_KEY, 'method': 'post', 'json': 1}
-            response = requests.post('http://2captcha.com/in.php', data=data, files=files)
-            response.raise_for_status()
-            result = response.json()
-            request_id = result.get('request')
-            if not request_id:
-                raise Exception(f"Failed to get CAPTCHA ID: {result.get('request')}")
-
-        # Wait for CAPTCHA solution
-        for _ in range(20):  # Wait up to 100 seconds
-            time.sleep(5)
-            response = requests.get(f'http://2captcha.com/res.php?key={API_KEY}&action=get&id={request_id}&json=1')
-            response.raise_for_status()
-            result = response.json()
-            if result.get('status') == 1:
-                return result.get('request')
-            elif result.get('request') == 'CAPCHA_NOT_READY':
-                continue
-            else:
-                raise Exception(f"Error getting CAPTCHA solution: {result.get('request')}")
-        raise Exception("Timed out waiting for CAPTCHA solution.")
+        # Send CAPTCHA image to 2Captcha using the library's method
+        result = solver.normal('captcha.jpg')
+        if result['status'] == 1:
+            return result['code']
+        else:
+            raise Exception(f"Error solving CAPTCHA: {result['request']}")
     except Exception as e:
         print(f"Error solving CAPTCHA: {e}")
         return ""
@@ -97,8 +79,6 @@ try:
         captcha_field.send_keys(captcha_solution)
     else:
         print("Failed to solve CAPTCHA. Exiting...")
-        driver.quit()
-        exit()
 
     # Submit the form
     submit_button = WebDriverWait(driver, 10).until(
