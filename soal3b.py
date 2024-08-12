@@ -49,43 +49,55 @@ driver = webdriver.Chrome()
 try:
     driver.get("https://tes123.kpntr.com/login_staff")
 
-    email_field = WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.XPATH, "//p[text()='E-Mail']/following-sibling::input"))
-    )
-    email_field.clear()
-    email_field.send_keys("staff123321@yopmail.com")
+    while True:  
+        email_field = WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.XPATH, "//p[text()='E-Mail']/following-sibling::input"))
+        )
+        email_field.clear()
+        email_field.send_keys("staff123321@yopmail.com")
 
-    password_field = WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.XPATH, "//p[text()='Password']/following-sibling::input"))
-    )
-    password_field.clear()
-    password_field.send_keys("123321staff")
+        password_field = WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.XPATH, "//p[text()='Password']/following-sibling::input"))
+        )
+        password_field.clear()
+        password_field.send_keys("123321staff")
 
-    captcha_image_element = WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.XPATH, "//div[@id='myCaptcha']/img"))
-    )
-
-    captcha_solution = get_captcha_solution(captcha_image_element)
-    print(f"Captcha Solution: {captcha_solution}")
-
-    if captcha_solution:
-        captcha_field = WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.XPATH, "//div[@id='myCaptcha']//following::input[1]"))
+        captcha_image_element = WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.XPATH, "//div[@id='myCaptcha']/img"))
         )
 
-        captcha_field.clear()
+        captcha_solution = get_captcha_solution(captcha_image_element)
+        print(f"Captcha Solution: {captcha_solution}")
 
-        driver.execute_script("arguments[0].value = arguments[1];", captcha_field, captcha_solution)
-        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", captcha_field)
+        if captcha_solution:
+            captcha_field = WebDriverWait(driver, 10).until(
+                EC.visibility_of_element_located((By.XPATH, "//div[@id='myCaptcha']//following::input[1]"))
+            )
 
-        time.sleep(1)
+            captcha_field.clear()
 
-        submit_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[text()='Masuk']"))
-        )
-        submit_button.click()
-    else:
-        print("Failed to solve CAPTCHA. Exiting...")
+            driver.execute_script("arguments[0].value = arguments[1];", captcha_field, captcha_solution)
+            driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", captcha_field)
+
+            time.sleep(1)
+
+            submit_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[text()='Masuk']"))
+            )
+            submit_button.click()
+
+            time.sleep(2)  
+            try:
+                error_message = driver.find_element(By.XPATH, "//p[contains(@class, 'font-red') and contains(text(), 'Captcha Wajib Diisi dengan Benar!')]")
+                if error_message.is_displayed():
+                    print("Captcha salah, mencoba lagi...")
+                    continue  
+            except:
+                print("Login berhasil, tidak ada pesan error.")
+                break  
+        else:
+            print("Failed to solve CAPTCHA. Exiting...")
+            break
 
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.XPATH, "//element_you_expect_on_next_page"))
